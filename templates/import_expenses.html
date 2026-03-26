@@ -1,0 +1,30 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Import Expenses</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+    <main class="main-content" style="max-width: 760px;">
+        <section class="query-card">
+            <h2 class="section-title">Import Expenses</h2>
+            {% if error %}<div class="warning-alert"><p>{{ error }}</p></div>{% endif %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="result-card"><p>{{ message }}</p></div>
+                {% endfor %}
+            {% endif %}
+            <form method="post" enctype="multipart/form-data" class="query-form">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit" class="btn btn-primary">Upload and Import</button>
+            </form>
+            <p class="hint">Use columns: category, amount, date (YYYY-MM-DD), payment_mode.</p>
+            <p class="hint"><a href="{% url 'index' %}">Back to Dashboard</a></p>
+        </section>
+    </main>
+</body>
+</html>

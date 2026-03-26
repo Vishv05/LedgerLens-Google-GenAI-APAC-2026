@@ -1,0 +1,27 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LedgerLens Login</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+    <main class="main-content" style="max-width: 560px;">
+        <section class="query-card">
+            <h2 class="section-title">Login to LedgerLens</h2>
+            {% if error %}<div class="warning-alert"><p>{{ error }}</p></div>{% endif %}
+            <form method="post" class="query-form">
+                {% csrf_token %}
+                <label>Username</label>
+                <input type="text" name="username" class="query-input" required>
+                <label>Password</label>
+                <input type="password" name="password" class="query-input" required>
+                <button type="submit" class="btn btn-primary">Login</button>
+            </form>
+            <p class="hint">No account? <a href="{% url 'register' %}">Create one</a>.</p>
+        </section>
+    </main>
+</body>
+</html>

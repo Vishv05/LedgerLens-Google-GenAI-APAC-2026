@@ -1,0 +1,756 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LedgerLens - Expense Intelligence</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <script src="{% static 'js/app.js' %}"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-container">
+            <div class="logo-section">
+                <div class="logo">💰</div>
+                <div class="logo-text">
+                    <h1>LedgerLens</h1>
+                    <p>AI-Powered Expense Analytics</p>
+                </div>
+            </div>
+            <nav class="nav">
+                <span class="badge">Django + Gemini + AI</span>
+                <a class="top-link" href="{% url 'import_expenses' %}">Import Data</a>
+                <a class="top-link" href="{% url 'manage_budgets' %}">Budgets</a>
+                <button id="darkModeToggle" class="btn btn-secondary" style="margin-left:1rem;">🌙 Dark Mode</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <!-- Dashboard Stats Section -->
+        <section class="dashboard-section">
+            <div class="container">
+                <h2 class="section-title">Your Spending Overview</h2>
+                <div class="stats-grid">
+                    <div class="stat-card is-active" data-detail-target="total" role="button" tabindex="0" aria-label="Show total spending details">
+                        <div class="stat-icon total">💵</div>
+                        <div class="stat-content">
+                            <p class="stat-label">Total Spending</p>
+                            <p class="stat-value">₹{{ dashboard_stats.total_spent|floatformat:0 }}</p>
+                        </div>
+                    </div>
+                    <div class="stat-card" data-detail-target="transactions" role="button" tabindex="0" aria-label="Show transactions details">
+                        <div class="stat-icon transactions">📊</div>
+                        <div class="stat-content">
+                            <p class="stat-label">Transactions</p>
+                            <p class="stat-value">{{ dashboard_stats.total_transactions }}</p>
+                        </div>
+                    </div>
+                    <div class="stat-card" data-detail-target="average" role="button" tabindex="0" aria-label="Show average transaction details">
+                        <div class="stat-icon average">📈</div>
+                        <div class="stat-content">
+                            <p class="stat-label">Avg per Transaction</p>
+                            <p class="stat-value">₹{{ dashboard_stats.avg_transaction|floatformat:2 }}</p>
+                        </div>
+                    </div>
+                    <div class="stat-card" data-detail-target="categories" role="button" tabindex="0" aria-label="Show categories details">
+                        <div class="stat-icon categories">🏷️</div>
+                        <div class="stat-content">
+                            <p class="stat-label">Categories</p>
+                            <p class="stat-value">{{ dashboard_stats.categories|length }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-detail-wrap" id="stat-detail-wrap">
+                    <div class="stat-detail-panel is-active" id="detail-total">
+                        <h3>Total Spending Details</h3>
+                        <p class="stat-detail-lead">Your overall expense total is <strong>₹{{ dashboard_stats.total_spent|floatformat:0 }}</strong> across all months.</p>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Month</th>
+                                        <th>Transactions</th>
+                                        <th>Total Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in dashboard_stats.monthly %}
+                                        <tr>
+                                            <td>{{ item.month }}</td>
+                                            <td>{{ item.count }}</td>
+                                            <td>₹{{ item.total|floatformat:0 }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="stat-detail-panel" id="detail-transactions" hidden>
+                        <h3>Transactions Details</h3>
+                        <p class="stat-detail-lead">You have <strong>{{ dashboard_stats.total_transactions }}</strong> total transactions. Breakdown by category:</p>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Category</th>
+                                        <th>Transaction Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for cat in dashboard_stats.categories %}
+                                        <tr>
+                                            <td>{{ cat.category }}</td>
+                                            <td>{{ cat.count }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="stat-detail-panel" id="detail-average" hidden>
+                        <h3>Average Per Transaction Details</h3>
+                        <p class="stat-detail-lead">Overall average transaction value is <strong>₹{{ dashboard_stats.avg_transaction|floatformat:2 }}</strong>.</p>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Category</th>
+                                        <th>Average Amount</th>
+                                        <th>Total Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for cat in dashboard_stats.categories %}
+                                        <tr>
+                                            <td>{{ cat.category }}</td>
+                                            <td>₹{{ cat.avg_amount|default_if_none:"0"|floatformat:2 }}</td>
+                                            <td>₹{{ cat.total_amount|default_if_none:"0"|floatformat:0 }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="stat-detail-panel" id="detail-categories" hidden>
+                        <h3>Categories Details</h3>
+                        <p class="stat-detail-lead">You have <strong>{{ dashboard_stats.categories|length }}</strong> categories in your dataset.</p>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Category</th>
+                                        <th>Transactions</th>
+                                        <th>Total Amount</th>
+                                        <th>Average Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for cat in dashboard_stats.categories %}
+                                        <tr>
+                                            <td>{{ cat.category }}</td>
+                                            <td>{{ cat.count }}</td>
+                                            <td>₹{{ cat.total_amount|default_if_none:"0"|floatformat:0 }}</td>
+                                            <td>₹{{ cat.avg_amount|default_if_none:"0"|floatformat:2 }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Charts Section -->
+        <section class="charts-section">
+            <div class="container">
+                <h2 class="section-title">Spending Analytics</h2>
+                <div class="result-metric-grid" style="margin-bottom:1rem;">
+                    <div class="mini-metric-card">
+                        <p class="mini-label">Forecast (Next Month)</p>
+                        <p class="mini-value">₹{{ forecast_info.next_month_forecast|default_if_none:"0"|floatformat:0 }}</p>
+                    </div>
+                    <div class="mini-metric-card">
+                        <p class="mini-label">Trend</p>
+                        <p class="mini-value" style="text-transform:capitalize;">{{ forecast_info.trend|default:"flat" }}</p>
+                    </div>
+                </div>
+
+                {% if budget_alerts %}
+                    <div class="result-card" style="margin-bottom:1rem;">
+                        <h3 class="result-title">Budget Alerts</h3>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Category</th>
+                                        <th>Spent</th>
+                                        <th>Limit</th>
+                                        <th>Usage</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for alert in budget_alerts %}
+                                        <tr>
+                                            <td>{{ alert.category }}</td>
+                                            <td>₹{{ alert.spent }}</td>
+                                            <td>₹{{ alert.limit }}</td>
+                                            <td>{{ alert.pct }}%</td>
+                                            <td>{{ alert.message }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if anomalies %}
+                    <div class="result-card" style="margin-bottom:1rem;">
+                        <h3 class="result-title">Anomaly Detection</h3>
+                        <p class="hint">Potential unusual daily spending spikes:</p>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Total Spend</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in anomalies %}
+                                        <tr>
+                                            <td>{{ item.date }}</td>
+                                            <td>₹{{ item.total }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if recurring_transactions %}
+                    <div class="result-card recurring-card" style="margin-bottom:1rem;">
+                        <h3 class="result-title">Recurring Expense Detector</h3>
+                        <p class="hint">Likely subscriptions and repeated monthly charges:</p>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Category</th>
+                                        <th>Payment Mode</th>
+                                        <th>Amount</th>
+                                        <th>Months Seen</th>
+                                        <th>Annual Estimate</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in recurring_transactions %}
+                                        <tr>
+                                            <td>{{ item.category }}</td>
+                                            <td>{{ item.payment_mode }}</td>
+                                            <td>₹{{ item.amount }}</td>
+                                            <td>{{ item.months_seen }}</td>
+                                            <td>₹{{ item.annual_estimate }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if budget_optimization.actions %}
+                    <div class="result-card optimization-card" style="margin-bottom:1rem;">
+                        <h3 class="result-title">Budget Optimization Engine</h3>
+                        <p class="answer-text" style="margin-bottom:0.8rem;">{{ budget_optimization.summary }}</p>
+                        <div class="result-metric-grid" style="margin-bottom:1rem;">
+                            <div class="mini-metric-card">
+                                <p class="mini-label">Target Saving</p>
+                                <p class="mini-value">₹{{ budget_optimization.target_saving }}</p>
+                            </div>
+                            <div class="mini-metric-card">
+                                <p class="mini-label">Projected Saving</p>
+                                <p class="mini-value">₹{{ budget_optimization.projected_saving }}</p>
+                            </div>
+                            <div class="mini-metric-card">
+                                <p class="mini-label">Gap</p>
+                                <p class="mini-value">₹{{ budget_optimization.remaining_gap }}</p>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Category</th>
+                                        <th>Current Monthly Spend</th>
+                                        <th>Suggested Cut</th>
+                                        <th>Cut %</th>
+                                        <th>New Target</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for action in budget_optimization.actions %}
+                                        <tr>
+                                            <td>{{ action.category }}</td>
+                                            <td>₹{{ action.monthly_spend }}</td>
+                                            <td>₹{{ action.suggested_cut }}</td>
+                                            <td>{{ action.cut_pct }}%</td>
+                                            <td>₹{{ action.new_target }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3>Spending by Category</h3>
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Monthly Trend</h3>
+                        <canvas id="monthlyChart"></canvas>
+                    </div>
+                </div>
+
+                {% if ai_feed_insights %}
+                    <div class="result-card ai-feed-card" style="margin-top:1rem; margin-bottom:0;">
+                        <h3 class="result-title">AI Insight Feed</h3>
+                        <div class="ai-feed-grid">
+                            {% for insight in ai_feed_insights %}
+                                <article class="ai-feed-item ai-tone-{{ insight.tone|default:'neutral' }}">
+                                    <p class="ai-feed-title">{{ insight.title }}</p>
+                                    <p class="ai-feed-text">{{ insight.text }}</p>
+                                    <p class="ai-feed-suggestion">{{ insight.suggestion }}</p>
+                                </article>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <!-- Query Section -->
+        <section class="query-section">
+            <div class="container">
+                <h2 class="section-title">Smart Query</h2>
+                <div class="result-metric-grid" style="margin-bottom:1rem;">
+                    <div class="result-card" style="margin-bottom:0;">
+                        <h3 class="result-title">Saved Queries</h3>
+                        <div class="suggestion-list">
+                            {% for item in saved_queries %}
+                                <button type="button" class="suggestion-chip" data-suggestion="{{ item.question }}">{{ item.title }}</button>
+                                <a class="top-link" href="{% url 'delete_saved_query' item.id %}">Delete</a>
+                            {% empty %}
+                                <span class="hint">No saved queries yet.</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="result-card" style="margin-bottom:0;">
+                        <h3 class="result-title">Recent Query History</h3>
+                        <div class="suggestion-list">
+                            {% for item in query_history %}
+                                <button type="button" class="suggestion-chip" data-suggestion="{{ item.question }}">{{ item.question }}</button>
+                            {% empty %}
+                                <span class="hint">No history yet.</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="result-card conversation-card" style="margin-bottom:1rem;">
+                    <h3 class="result-title">Conversation Mode</h3>
+                    <div class="conversation-thread">
+                        {% for turn in conversation_turns %}
+                            <article class="conversation-turn">
+                                <p class="conversation-user">You: {{ turn.user }}</p>
+                                <p class="conversation-assistant">AI: {{ turn.assistant }}</p>
+                            </article>
+                        {% empty %}
+                            <p class="hint">Ask a query and continue with follow-ups like "only UPI", "for February instead", or "show average".</p>
+                        {% endfor %}
+                    </div>
+                    {% if ai_followup_suggestions %}
+                        <p class="suggestion-title" style="margin-top:0.7rem;">Suggested next prompts:</p>
+                        <div class="suggestion-list">
+                            {% for prompt in ai_followup_suggestions %}
+                                <button type="button" class="suggestion-chip" data-suggestion="{{ prompt }}">{{ prompt }}</button>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="query-card">
+                    {% if conversation_note %}
+                        <div class="info-alert">
+                            <h3>Context Applied</h3>
+                            <p>{{ conversation_note }}</p>
+                        </div>
+                    {% endif %}
+
+                    {% if clarification_message %}
+                        <div class="warning-alert">
+                            <span class="warning-icon">?</span>
+                            <div>
+                                <h3>Clarification Needed</h3>
+                                <p>{{ clarification_message }}</p>
+                                {% if clarification_options %}
+                                    <div class="suggestion-list" style="margin-top:0.5rem;">
+                                        {% for option in clarification_options %}
+                                            <button type="button" class="suggestion-chip" data-suggestion="{{ option }}">{{ option }}</button>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <form method="post" id="smartspend-form" class="query-form">
+                        {% csrf_token %}
+                        <div class="query-suggestions" id="query-suggestions">
+                            <p class="suggestion-title">Try quick questions:</p>
+                            <div class="suggestion-list">
+                                {% for suggestion in query_suggestions %}
+                                    <button type="button" class="suggestion-chip" data-suggestion="{{ suggestion }}">{{ suggestion }}</button>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="id_question">Ask in plain English</label>
+                            <div class="input-wrapper">
+                                {{ form.question }}
+                                <button type="submit" id="submit-btn" class="btn btn-primary">
+                                    <span class="btn-text">Analyze</span>
+                                    <span class="btn-icon">→</span>
+                                </button>
+                            </div>
+
+                            <div class="input-wrapper">
+                                <input type="text" id="save-query-title" placeholder="Save this query as..." class="query-input" />
+                                <button type="button" class="btn" id="save-query-btn">Save Query</button>
+                            </div>
+                            <p class="hint">e.g., "What is my total monthly spend on food for January month?"</p>
+                        </div>
+                    </form>
+                    <form method="post" action="{% url 'save_query' %}" id="save-query-form" style="display:none;">
+                        {% csrf_token %}
+                        <input type="hidden" name="title" id="save-query-hidden-title" />
+                        <input type="hidden" name="question" id="save-query-hidden-question" />
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- Error Message -->
+        {% if error_message %}
+            <section class="results-section">
+                <div class="container">
+                    <div class="error-alert">
+                        <span class="error-icon">⚠️</span>
+                        <div>
+                            <h3>Error</h3>
+                            <p>{{ error_message }}</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        {% endif %}
+
+        <!-- Results Section -->
+        {% if user_question %}
+            <section class="results-section">
+                <div class="container">
+                    {% if warning_message %}
+                        <div class="warning-alert">
+                            <span class="warning-icon">⚠️</span>
+                            <div>
+                                <h3>No Data Found</h3>
+                                <p>{{ warning_message }}</p>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Question Display -->
+                    <div class="result-card">
+                        <h3 class="result-title">Your Question</h3>
+                        <p class="question-text">{{ user_question }}</p>
+                    </div>
+
+                    <div class="result-metric-grid">
+                        <div class="mini-metric-card">
+                            <p class="mini-label">Total Amount</p>
+                            <p class="mini-value">₹{{ smart_insight.total_amount|default_if_none:"0"|floatformat:0 }}</p>
+                        </div>
+                        <div class="mini-metric-card">
+                            <p class="mini-label">Transactions</p>
+                            <p class="mini-value">{{ smart_insight.transaction_count|default_if_none:"0" }}</p>
+                        </div>
+                        <div class="mini-metric-card">
+                            <p class="mini-label">Contribution</p>
+                            <p class="mini-value">{{ smart_insight.contribution_pct|default_if_none:"0" }}%</p>
+                        </div>
+                        <div class="mini-metric-card confidence-card">
+                            <p class="mini-label">🤖 Confidence</p>
+                            <p class="mini-value">{{ confidence_score }}%</p>
+                        </div>
+                    </div>
+
+                    <!-- Generated SQL -->
+                    {% if generated_sql %}
+                        <div class="result-card code-card">
+                            <h3 class="result-title">Generated SQL</h3>
+                            <pre><code>{{ generated_sql }}</code></pre>
+                            <div class="result-actions">
+                                <button class="copy-btn" onclick="copyToClipboard(event)">Copy SQL</button>
+                                <a class="copy-btn export-btn" href="{% url 'download_results_csv' %}">Download Results as CSV</a>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Detailed Answer -->
+                    {% if detailed_answer %}
+                        <div class="result-card answer-card">
+                            <h3 class="result-title">💡 Detailed Answer</h3>
+                            <p class="answer-text">{{ detailed_answer }}</p>
+                        </div>
+                    {% endif %}
+
+                    {% if smart_insight.insight_text %}
+                        <div class="result-card insight-card">
+                            <h3 class="result-title">📊 Insight</h3>
+                            <p class="answer-text">{{ smart_insight.insight_text }}</p>
+                            <h3 class="result-title insight-subtitle">💡 Suggestion</h3>
+                            <p class="answer-text">{{ smart_insight.suggestion_text }}</p>
+                        </div>
+                    {% endif %}
+
+                    <!-- Matched Dataset Summary -->
+                    {% if matched_record_count > 0 %}
+                        <div class="result-card summary-card">
+                            <h3 class="result-title">📌 Matched Records</h3>
+                            <div class="summary-info">
+                                <div class="summary-item">
+                                    <span class="summary-label">Total Matches:</span>
+                                    <span class="summary-value">{{ matched_record_count }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Category Breakdown -->
+                    {% if matched_category_columns %}
+                        <div class="result-card">
+                            <h3 class="result-title">📊 Category Breakdown</h3>
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            {% for column in matched_category_columns %}
+                                                <th>{{ column }}</th>
+                                            {% endfor %}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for row in matched_category_rows %}
+                                            <tr>
+                                                {% for cell in row %}
+                                                    <td>{% if forloop.first %}<strong>{{ cell }}</strong>{% else %}{{ cell|default_if_none:"0" }}{% endif %}</td>
+                                                {% endfor %}
+                                            </tr>
+                                        {% empty %}
+                                            <tr>
+                                                <td colspan="{{ matched_category_columns|length }}" class="empty-state">No category data</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Matched Records -->
+                    {% if matched_record_columns %}
+                        <div class="result-card">
+                            <h3 class="result-title">📋 Matched Expense Records</h3>
+                            {% if matched_rows_truncated %}
+                                <p class="truncation-notice">Showing first {{ matched_record_rows|length }} records out of {{ matched_record_count }} matches</p>
+                            {% endif %}
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            {% for column in matched_record_columns %}
+                                                <th>{{ column }}</th>
+                                            {% endfor %}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for row in matched_record_rows %}
+                                            <tr class="data-row">
+                                                {% for cell in row %}
+                                                    <td>{{ cell|default_if_none:"0" }}</td>
+                                                {% endfor %}
+                                            </tr>
+                                        {% empty %}
+                                            <tr>
+                                                <td colspan="{{ matched_record_columns|length }}" class="empty-state">No records found</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Query Result (Aggregate) -->
+                    {% if result_columns %}
+                        <div class="result-card aggregate-card">
+                            <h3 class="result-title">🎯 Query Result</h3>
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            {% for column in result_columns %}
+                                                <th>{{ column }}</th>
+                                            {% endfor %}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for row in result_rows %}
+                                            <tr class="aggregate-row">
+                                                {% for cell in row %}
+                                                    <td class="aggregate-value"><strong>{{ cell|default_if_none:"0" }}</strong></td>
+                                                {% endfor %}
+                                            </tr>
+                                        {% empty %}
+                                            <tr>
+                                                <td colspan="{{ result_columns|length }}" class="empty-state">No results</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </section>
+        {% endif %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 LedgerLens | Powered by Vishv Bhavsar</p>
+        </div>
+    </footer>
+
+    {{ chart_data.category_chart.labels|json_script:"category-labels-data" }}
+    {{ chart_data.category_chart.data|json_script:"category-values-data" }}
+    {{ chart_data.monthly_chart.labels|json_script:"monthly-labels-data" }}
+    {{ chart_data.monthly_chart.data|json_script:"monthly-values-data" }}
+
+    <script src="{% static 'js/app.js' %}"></script>
+    <script>
+        if (typeof Chart === 'undefined') {
+            const chartCards = document.querySelectorAll('.chart-card');
+            chartCards.forEach((card) => {
+                const msg = document.createElement('p');
+                msg.className = 'chart-load-error';
+                msg.textContent = 'Unable to load charts right now. Please check internet access and refresh.';
+                card.appendChild(msg);
+            });
+        }
+
+        // Chart.js Data
+        const categoryLabels = JSON.parse(document.getElementById('category-labels-data').textContent);
+        const categoryData = JSON.parse(document.getElementById('category-values-data').textContent);
+        const monthlyLabels = JSON.parse(document.getElementById('monthly-labels-data').textContent);
+        const monthlyData = JSON.parse(document.getElementById('monthly-values-data').textContent);
+
+        // Category Chart
+        const categoryCtx = document.getElementById('categoryChart');
+        if (typeof Chart !== 'undefined' && categoryCtx && categoryLabels.length > 0) {
+            new Chart(categoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: categoryLabels,
+                    datasets: [{
+                        data: categoryData,
+                        backgroundColor: [
+                            '#6366F1', '#EC4899', '#F59E0B', '#10B981', '#3B82F6',
+                            '#8B5CF6', '#06B6D4', '#EF4444', '#14B8A6', '#F97316'
+                        ],
+                        borderColor: '#fff',
+                        borderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { padding: 15, font: { size: 12, family: "'Inter', sans-serif" } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Monthly Trend Chart
+        const monthlyCtx = document.getElementById('monthlyChart');
+        if (typeof Chart !== 'undefined' && monthlyCtx && monthlyLabels.length > 0) {
+            new Chart(monthlyCtx, {
+                type: 'line',
+                data: {
+                    labels: monthlyLabels,
+                    datasets: [{
+                        label: 'Monthly Spending',
+                        data: monthlyData,
+                        borderColor: '#6366F1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#6366F1',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { display: true, labels: { font: { size: 12, family: "'Inter', sans-serif" } } }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { callback: function(value) { return '₹' + value; } }
+                        }
+                    }
+                }
+            });
+        }
+
+    </script>
+</body>
+</html>
