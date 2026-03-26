@@ -1,4 +1,4 @@
-# LedgerLens: Google GenAI APAC 2026
+# LedgerLens: Google GenAI Academy APAC 2026
 
 LedgerLens is a Django-based smart spend analyzer that leverages Google GenAI for advanced expense analysis and forecasting. This project is designed for easy deployment on cloud platforms and features a user-friendly interface for managing budgets, importing expenses, and generating insights.
 
@@ -94,7 +94,7 @@ docker run -p 8080:8080 ledgerlens
 MIT License
 
 ## Author
-Vishv05
+https://github.com/Vishv05
 
 ---
 
